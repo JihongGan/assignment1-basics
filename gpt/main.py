@@ -1,7 +1,9 @@
-from gpt.tokenizer import train, EOT
+from gpt.tokenizer import train
 import json
 import base64
 from gpt.config import DATA_DIR
+
+EOT = "<|endoftext|>"
 
 
 def train_tinystories_tok():
