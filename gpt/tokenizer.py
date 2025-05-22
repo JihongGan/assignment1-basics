@@ -22,7 +22,10 @@ class Tokenizer:
     ):
         self.vocab = vocab
         self.merges = merges
-        self.special_tokens = special_tokens
+        # longest tokens first so overlapping tokens keep the longest intact
+        self.special_tokens = (
+            sorted(special_tokens, key=len, reverse=True) if special_tokens else None
+        )
 
         self.id_of: dict[bytes, int] = {v: k for k, v in vocab.items()}
         self.rank: dict[tuple[bytes, bytes], int] = {p: i for i, p in enumerate(merges)}
@@ -92,7 +95,7 @@ class Tokenizer:
         for part in parts:
             if not part:
                 continue
-            if part in self.special_tokens:
+            if self.special_tokens and part in self.special_tokens:
                 tok_id = self.id_of[part.encode()]
                 ids.append(tok_id)
                 continue
@@ -196,6 +199,7 @@ def train(
     merges: list[tuple[bytes, bytes]] = []
 
     # 1. seed vocab (specials then single‑byte symbols)
+    special_tokens = sorted(special_tokens, key=len, reverse=True)
     for tok in special_tokens:
         vocab[len(vocab)] = tok.encode()
     for i in range(256):
