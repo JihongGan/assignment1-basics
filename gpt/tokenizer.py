@@ -24,6 +24,9 @@ class Tokenizer:
         self.merges = merges
         self.special_tokens = special_tokens
 
+        self.id_of: dict[bytes, int] = {v: k for k, v in vocab.items()}
+        self.rank: dict[tuple[bytes, bytes], int] = {p: i for i, p in enumerate(merges)}
+
     @classmethod
     def from_training_data(
         cls, vocab_size: int, special_tokens: list[str], input_path: str
@@ -47,24 +50,70 @@ class Tokenizer:
             }
 
         # Load merges: each line is "base64(a) base64(b)"
-        merges = []
+        merges: list[tuple[bytes, bytes]] = []
         with open(merges_filepath, "r") as f:
             for line in f:
-                a_b64, b_b64 = line.strip().split()  # split on space or tab
-                a = base64.b64decode(a_b64)
-                b = base64.b64decode(b_b64)
-                merges.append((a, b))
-
+                a_b64, b_b64 = line.strip().split()
+                merges.append((base64.b64decode(a_b64), base64.b64decode(b_b64)))
         return cls(vocab, merges, special_tokens)
 
+    def _bpe(self, word: bytes) -> list[bytes]:
+        symbols = [bytes([b]) for b in word]
+        while True:
+            best = None
+            best_rank = 1e12
+            for a, b in zip(symbols, symbols[1:]):
+                r = self.rank.get((a, b))
+                if r is not None and r < best_rank:
+                    best_rank = r
+                    best = (a, b)
+            if best is None:
+                break
+            merged = best[0] + best[1]
+            out: list[bytes] = []
+            i = 0
+            while i < len(symbols):
+                if i < len(symbols) - 1 and (symbols[i], symbols[i + 1]) == best:
+                    out.append(merged)
+                    i += 2
+                else:
+                    out.append(symbols[i])
+                    i += 1
+            symbols = out
+        return symbols
+
     def encode(self, text: str) -> list[int]:
-        pass
+        ids: list[int] = []
+        if self.special_tokens:
+            pat = re.compile(f"({'|'.join(map(re.escape, self.special_tokens))})")
+            parts = pat.split(text)
+        else:
+            parts = [text]
+        for part in parts:
+            if not part:
+                continue
+            if part in self.special_tokens:
+                tok_id = self.id_of[part.encode()]
+                ids.append(tok_id)
+                continue
+            for m in PAT.finditer(part):
+                for sym in self._bpe(m.group().encode()):
+                    ids.append(self.id_of[sym])
+        return ids
 
     def encode_iterable(self, iterable: Iterable[str]) -> Iterator[int]:
-        pass
+        """
+        Given an iterable of strings (e.g., a Python file handle),
+        return a generator that lazily yields token IDs.
+        This is required for memory-efficient tokenization of large files
+        that we cannot directly load into memory.
+        """
+        for chunk in iterable:
+            for tid in self.encode(chunk):
+                yield tid
 
     def decode(self, tokens: list[int]) -> str:
-        pass
+        return b"".join(self.vocab[t] for t in tokens).decode("utf-8", errors="ignore")
 
 
 def find_chunk_boundaries(
@@ -156,9 +205,7 @@ def train(
 
     # 2. corpus stats
     token_freq = pretokenize_file(input_path, special_tokens)
-    symbols: dict[bytes, list[bytes]] = {
-        t: [bytes([b]) for b in t] for t in token_freq
-    }
+    symbols: dict[bytes, list[bytes]] = {t: [bytes([b]) for b in t] for t in token_freq}
 
     # 3. build pair counts & inverted index
     pair_counts: Counter[tuple[bytes, bytes]] = Counter()

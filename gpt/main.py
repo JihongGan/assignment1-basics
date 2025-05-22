@@ -4,7 +4,7 @@ import base64
 from gpt.config import DATA_DIR
 
 
-def train_tinystories():
+def train_tinystories_tok():
     vocab, merges = train(
         DATA_DIR / "TinyStoriesV2-GPT4-train.txt",
         10000,
@@ -17,10 +17,7 @@ def train_tinystories():
     # ── vocab: id → bytes (stored as base64)
     with open(out / "vocab.json", "w") as f:
         json.dump(
-            {
-                str(i): base64.b64encode(tok).decode("ascii")
-                for i, tok in vocab.items()
-            },
+            {str(i): base64.b64encode(tok).decode("ascii") for i, tok in vocab.items()},
             f,
         )
 
@@ -33,4 +30,4 @@ def train_tinystories():
 
 
 if __name__ == "__main__":
-    train_tinystories()
+    train_tinystories_tok()
