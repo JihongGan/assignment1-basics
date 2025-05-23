@@ -1,0 +1,5 @@
+{
+  "python.defaultInterpreterPath": ".venv/bin/python", // or wherever your uv env is
+  "jupyter.jupyterServerType": "local",
+  "jupyter.interpreter.path": ".venv/bin/python"
+}
