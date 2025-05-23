@@ -315,7 +315,6 @@ dependencies = [
     { name = "einops" },
     { name = "einx" },
     { name = "jaxtyping" },
-    { name = "numpy" },
     { name = "psutil" },
     { name = "pytest" },
     { name = "regex" },
@@ -331,6 +330,7 @@ dependencies = [
 dev = [
     { name = "ipykernel" },
     { name = "ipython" },
+    { name = "numpy" },
     { name = "scalene" },
 ]
 
@@ -339,7 +339,6 @@ requires-dist = [
     { name = "einops", specifier = ">=0.8.1" },
     { name = "einx", specifier = ">=0.3.0" },
     { name = "jaxtyping", specifier = ">=0.3.0" },
-    { name = "numpy" },
     { name = "psutil", specifier = ">=6.1.1" },
     { name = "pytest", specifier = ">=8.3.4" },
     { name = "regex", specifier = ">=2024.11.6" },
@@ -355,6 +354,7 @@ requires-dist = [
 dev = [
     { name = "ipykernel", specifier = ">=6.29.5" },
     { name = "ipython", specifier = ">=9.2.0" },
+    { name = "numpy", specifier = ">=2.2.6" },
     { name = "scalene", specifier = ">=1.5.51" },
 ]
 
